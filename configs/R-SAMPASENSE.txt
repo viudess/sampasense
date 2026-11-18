@@ -1,0 +1,162 @@
+! ================================================================
+! R-SAMPASENSE  (Cisco 2911)  - Base Comunitaria SampaSense
+! Router-on-a-stick + DHCP + NAT/PAT + ACLs + SSH
+! Equipe 77  ->  faixa 192.168.77.0/24
+! Cole no modo EXEC privilegiado (Router#). Ver tutorial.
+! ================================================================
+enable
+configure terminal
+hostname R-SAMPASENSE
+no ip domain-lookup
+ip domain-name sampasense.sp.gov.br
+service password-encryption
+security passwords min-length 10
+enable secret SampaSense@Enable26
+username admin privilege 15 secret SampaSense@Admin26
+banner motd #ACESSO RESTRITO - Rede SampaSense / Smart Sampa. Somente pessoal autorizado. Acesso indevido e crime (Lei 12.737/2012).#
+login block-for 120 attempts 3 within 60
+!
+! ---------------- DHCP: um pool por VLAN (exclui gateway e servidor)
+ip dhcp excluded-address 192.168.77.1 192.168.77.5
+ip dhcp excluded-address 192.168.77.129 192.168.77.133
+ip dhcp excluded-address 192.168.77.193 192.168.77.199
+ip dhcp excluded-address 192.168.77.225 192.168.77.229
+!
+ip dhcp pool CIDADAO_WIFI
+ network 192.168.77.0 255.255.255.128
+ default-router 192.168.77.1
+ dns-server 192.168.77.194
+ip dhcp pool EQUIPE
+ network 192.168.77.128 255.255.255.192
+ default-router 192.168.77.129
+ dns-server 192.168.77.194
+ip dhcp pool SERVIDORES_SENSORES
+ network 192.168.77.192 255.255.255.224
+ default-router 192.168.77.193
+ dns-server 192.168.77.194
+ip dhcp pool GERENCIA
+ network 192.168.77.224 255.255.255.240
+ default-router 192.168.77.225
+ dns-server 192.168.77.194
+!
+! ---------------- ACL 1: redes internas que saem para a internet (PAT)
+access-list 1 remark Redes internas SampaSense traduzidas por PAT
+access-list 1 permit 192.168.77.0 0.0.0.255
+!
+! ---------------- ACL 10: quem pode abrir SSH no roteador
+access-list 10 remark SSH permitido somente da GERENCIA e da EQUIPE
+access-list 10 permit 192.168.77.224 0.0.0.15
+access-list 10 permit 192.168.77.128 0.0.0.63
+access-list 10 deny any
+!
+! ---------------- ACL estendida do Wi-Fi do cidadao (entrada da VLAN 20)
+ip access-list extended ACL_CIDADAO
+ remark Permite o celular obter IP por DHCP
+ permit udp any eq bootpc any eq bootps
+ remark Cidadao acessa SOMENTE HTTP e DNS do servidor SampaSense
+ permit tcp 192.168.77.0 0.0.0.127 host 192.168.77.194 eq www
+ permit udp 192.168.77.0 0.0.0.127 host 192.168.77.194 eq domain
+ remark Nada da VLAN EQUIPE
+ deny ip 192.168.77.0 0.0.0.127 192.168.77.128 0.0.0.63
+ remark Nada de sensores, totens, semaforos, gerencia ou do proprio roteador
+ deny ip 192.168.77.0 0.0.0.127 192.168.77.0 0.0.0.255
+ deny ip 192.168.77.0 0.0.0.127 host 203.0.113.1
+ remark Internet liberada
+ permit ip 192.168.77.0 0.0.0.127 any
+!
+! ---------------- ACL de MODO EMERGENCIA (portal de alerta / captive portal)
+! Aplicada no lugar da ACL_CIDADAO quando ha alagamento: o Wi-Fi so entrega
+! a pagina de alerta e a rota segura do servidor SampaSense.
+ip access-list extended ACL_CIDADAO_EMERGENCIA
+ remark Modo emergencia: Wi-Fi so alcanca o portal de alerta
+ permit udp any eq bootpc any eq bootps
+ permit tcp 192.168.77.0 0.0.0.127 host 192.168.77.194 eq www
+ permit udp 192.168.77.0 0.0.0.127 host 192.168.77.194 eq domain
+ deny ip any any
+!
+! ---------------- ACL de protecao da VLAN de Servidores/Sensores (saida p/ VLAN 30)
+ip access-list extended ACL_SERVIDORES
+ remark DHCP para os sensores
+ permit udp any eq bootps any eq bootpc
+ remark EQUIPE e GERENCIA administram servidores, totens e semaforos
+ permit ip 192.168.77.128 0.0.0.63 192.168.77.192 0.0.0.31
+ permit ip 192.168.77.224 0.0.0.15 192.168.77.192 0.0.0.31
+ remark Qualquer outra origem: apenas portal (HTTP/HTTPS) e DNS do servidor
+ permit tcp any host 192.168.77.194 eq www
+ permit tcp any host 192.168.77.194 eq 443
+ permit udp any host 192.168.77.194 eq domain
+ remark Respostas a conexoes iniciadas pela propria VLAN 30
+ permit tcp any 192.168.77.192 0.0.0.31 established
+ permit icmp any 192.168.77.192 0.0.0.31 echo-reply
+ permit icmp any 192.168.77.192 0.0.0.31 unreachable
+ remark Ninguem mais fala com sensores/totens: evita disparo de alerta falso
+ deny ip any any
+!
+! ---------------- Interfaces (router-on-a-stick)
+interface GigabitEthernet0/0
+ description TRUNK 802.1Q para SW-BASE G0/1
+ no ip address
+ no shutdown
+!
+interface GigabitEthernet0/0.10
+ description VLAN10 EQUIPE - operadores
+ encapsulation dot1Q 10
+ ip address 192.168.77.129 255.255.255.192
+ ip nat inside
+!
+interface GigabitEthernet0/0.20
+ description VLAN20 CIDADAO - Wi-Fi Livre SP publico
+ encapsulation dot1Q 20
+ ip address 192.168.77.1 255.255.255.128
+ ip nat inside
+ ip access-group ACL_CIDADAO in
+!
+interface GigabitEthernet0/0.30
+ description VLAN30 SERVIDORES e SENSORES
+ encapsulation dot1Q 30
+ ip address 192.168.77.193 255.255.255.224
+ ip nat inside
+ ip access-group ACL_SERVIDORES out
+!
+interface GigabitEthernet0/0.99
+ description VLAN99 GERENCIA
+ encapsulation dot1Q 99
+ ip address 192.168.77.225 255.255.255.240
+ ip nat inside
+!
+interface GigabitEthernet0/0.999
+ description VLAN999 NATIVA sem uso (seguranca)
+ encapsulation dot1Q 999 native
+!
+interface GigabitEthernet0/1
+ description WAN para R-ISP (provedor)
+ ip address 203.0.113.1 255.255.255.252
+ ip nat outside
+ no shutdown
+!
+interface GigabitEthernet0/2
+ description SEM USO
+ shutdown
+!
+! ---------------- NAT/PAT + rota padrao
+ip nat inside source list 1 interface GigabitEthernet0/1 overload
+ip route 0.0.0.0 0.0.0.0 203.0.113.2
+!
+! ---------------- SSH e linhas
+crypto key generate rsa general-keys modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+line con 0
+ login local
+ exec-timeout 5 0
+ logging synchronous
+line vty 0 15
+ access-class 10 in
+ login local
+ transport input ssh
+ exec-timeout 5 0
+ logging synchronous
+end
+write memory

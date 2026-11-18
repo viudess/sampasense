@@ -1,0 +1,95 @@
+! ================================================================
+! SW-PRACA  (Cisco 2960)  - Armario de rua junto ao totem da praca
+! ================================================================
+enable
+configure terminal
+hostname SW-PRACA
+no ip domain-lookup
+ip domain-name sampasense.sp.gov.br
+service password-encryption
+security passwords min-length 10
+enable secret SampaSense@Enable26
+username admin privilege 15 secret SampaSense@Admin26
+banner motd #ACESSO RESTRITO - Rede SampaSense / Smart Sampa. Somente pessoal autorizado. Acesso indevido e crime (Lei 12.737/2012).#
+!
+vtp mode transparent
+vlan 10
+ name EQUIPE
+vlan 20
+ name CIDADAO_WIFI
+vlan 30
+ name SERVIDORES_SENSORES
+vlan 99
+ name GERENCIA
+vlan 999
+ name NATIVA_BLACKHOLE
+!
+interface GigabitEthernet0/1
+ description TRUNK 802.1Q para SW-BASE G0/2
+ switchport mode trunk
+ switchport trunk native vlan 999
+ switchport trunk allowed vlan 10,20,30,99,999
+ switchport nonegotiate
+ no shutdown
+!
+interface FastEthernet0/1
+ description VLAN20 CIDADAO - Access Point Wi-Fi Livre SP
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ no shutdown
+!
+interface range FastEthernet0/2 - 8
+ description VLAN30 SENSORES - nivel d'agua, camera, totem, semaforo
+ switchport mode access
+ switchport access vlan 30
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security mac-address sticky
+ switchport port-security violation shutdown
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+!
+interface range FastEthernet0/9 - 24
+ description PORTAS SEM USO (desligadas)
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+interface GigabitEthernet0/2
+ description PORTA SEM USO (desligada)
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+!
+interface Vlan1
+ no ip address
+ shutdown
+interface Vlan99
+ description Gerencia do switch
+ ip address 192.168.77.227 255.255.255.240
+ no shutdown
+ip default-gateway 192.168.77.225
+!
+access-list 10 remark SSH permitido somente da GERENCIA e da EQUIPE
+access-list 10 permit 192.168.77.224 0.0.0.15
+access-list 10 permit 192.168.77.128 0.0.0.63
+access-list 10 deny any
+!
+crypto key generate rsa general-keys modulus 1024
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+line con 0
+ login local
+ exec-timeout 5 0
+ logging synchronous
+line vty 0 15
+ access-class 10 in
+ login local
+ transport input ssh
+ exec-timeout 5 0
+ logging synchronous
+end
+write memory

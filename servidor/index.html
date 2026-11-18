@@ -1,0 +1,54 @@
+<html>
+<head><title>SampaSense - Ficha da CitizenTech</title></head>
+<body bgcolor="#F4F7FB">
+<center>
+<h1><font color="#0B3D91">SampaSense</font></h1>
+<p><b>O escudo climatico da cidade, na palma da mao do cidadao</b></p>
+<p><a href="alerta.html">[ Simular tela de ALERTA do Wi-Fi Livre SP ]</a></p>
+</center>
+<hr>
+<h2><font color="#0B3D91">Ficha da CitizenTech</font></h2>
+<table border="1" cellpadding="6" width="100%">
+<tr><td bgcolor="#DCE6F5" width="28%"><b>Nome da CitizenTech</b></td>
+<td>SampaSense</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Cidade e bairro</b></td>
+<td>Sao Paulo (SP) - Centro: Vale do Anhangabau e Praca da Bandeira (piloto)</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Cidadao beneficiado</b></td>
+<td>Pedestres, motoristas, moradores e comerciantes de vales e tuneis que alagam, com atencao a idosos e pessoas com deficiencia.</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Problema, em uma frase</b></td>
+<td>Em chuvas fortes, vales e tuneis de Sao Paulo alagam em minutos e quem esta na rua nao recebe aviso a tempo de sair do caminho da agua.</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Como funciona</b></td>
+<td>Os totens do Smart Sampa e sensores de nivel d'agua alimentam um modelo que estima a chance de alagamento pela chuva da ultima hora. Ao passar do limite, o SampaSense fecha o semaforo de acesso ao trecho, aciona painel de LED e sirene do totem, coloca o Wi-Fi Livre SP da praca em modo emergencia (tela de alerta com rota segura), envia WhatsApp/SMS a moradores cadastrados e pede Cell Broadcast a Defesa Civil.</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>O que cada parte faz</b></td>
+<td>
+<b>Data Science:</b> preve o alagamento pela chuva acumulada.<br>
+<b>Dynamic Programming:</b> rota segura e acessivel (evita agua, escadas e ladeiras).<br>
+<b>Java (DDD):</b> API de ocorrencias, alertas e confirmacoes dos moradores.<br>
+<b>Database:</b> sensores, ocorrencias, alertas e relatorio pos-evento.<br>
+<b>Network:</b> rede segmentada da base, Wi-Fi publico isolado e protecao contra alerta falso.<br>
+<b>AR/VR:</b> simulacao do alagamento e da rota de fuga.<br>
+<b>Agile:</b> personas, backlog e prototipos.
+</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Link do repositorio</b></td>
+<td>https://github.com/viudess/sampasense</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>Indicador de impacto</b></td>
+<td>Tempo entre deteccao e alerta (meta: menos de 60 s) e numero de pessoas avisadas por ocorrencia.</td></tr>
+<tr><td bgcolor="#DCE6F5"><b>ODS conectados</b></td>
+<td>ODS 11 (Cidades sustentaveis), ODS 13 (Acao climatica), ODS 3 (Saude e bem-estar), ODS 9 (Inovacao e infraestrutura), ODS 10 (Reducao das desigualdades)</td></tr>
+</table>
+<hr>
+<h3><font color="#0B3D91">Rede da Base Comunitaria SampaSense</font></h3>
+<ul>
+<li>VLAN 10 EQUIPE, VLAN 20 CIDADAO (Wi-Fi WPA2), VLAN 30 SERVIDORES/SENSORES, VLAN 99 GERENCIA</li>
+<li>Wi-Fi publico so acessa este portal (HTTP/DNS) e a internet - nunca a equipe ou os sensores</li>
+<li>Roteadores e switches administrados somente por SSH, a partir da gerencia</li>
+</ul>
+<h3><font color="#0B3D91">Equipe</font></h3>
+<p>Anna Clara Ruggeri da Silva (RM565553)<br>
+Eduardo Viudes Chorro (RM564075)<br>
+Giovanna da Silva Santos (RM566301)<br>
+Giovanna Luiza Bento (RM563203)<br>
+Victor Tadashi Saito Barra (RM563582)</p>
+<p><font size="2">Servidor SRV-SAMPASENSE - www.sampasense.sp - Global Solution FIAP 2026.2</font></p>
+</body>
+</html>

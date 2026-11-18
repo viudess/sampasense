@@ -1,0 +1,26 @@
+! ================================================================
+! R-ISP  (Cisco 2911)  - Provedor simulando a internet
+! NAO tem rota para 192.168.77.0/24: o acesso so funciona gracas ao NAT/PAT
+! ================================================================
+enable
+configure terminal
+hostname R-ISP
+no ip domain-lookup
+enable secret Provedor@Enable26
+banner motd #Roteador do PROVEDOR (internet simulada)#
+!
+interface GigabitEthernet0/0
+ description Link para cliente SampaSense (R-SAMPASENSE G0/1)
+ ip address 203.0.113.2 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/1
+ description Rede "internet" com servidor externo
+ ip address 198.51.100.1 255.255.255.0
+ no shutdown
+!
+line con 0
+ exec-timeout 5 0
+ logging synchronous
+end
+write memory
